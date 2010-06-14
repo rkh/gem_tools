@@ -64,6 +64,7 @@ module GemTools
 
     ##
     # Like Gem::Specification.new, but will `instance_eval` block **if it takes no argument**.
+    # Gem name is automatically set (file name without .gemspec) if missing.
     # Will extend created instance with GemTools::InstanceMethods.
     def new(name = nil, version = nil, &block)
       file = caller.first[/^[^:]+/]
