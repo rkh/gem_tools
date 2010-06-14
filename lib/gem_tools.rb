@@ -112,7 +112,7 @@ module GemTools
     alias github= github
 
     ##
-    # Allowes to execute some ruby code after installing gem.
+    # Allows to execute some ruby code after installing gem.
     #
     # @example
     #   Gem::Specification.new('some_gem') do |s|
@@ -161,6 +161,40 @@ module GemTools
     # @api private
     def setup_hook?
       @setup_hook or !run_code? or name == 'gem_tools'
+    end
+
+    ##
+    # Installs a dependency if the block evaluates to true.
+    #
+    # @example
+    #   require 'monkey/engine' # gem install monkey-lib
+    #   require 'gem_tools'
+    #
+    #   Gem::Specification.new 'example', '1.0' do
+    #     extend Monkey::Engine
+    #     add_conditional_dependency('lyndon') { macruby? }
+    #     add_conditional_dependency('johnson') { mri? or rbx? }
+    #     add_conditional_dependency('therubyrhino') { jruby? }
+    #   end
+    #
+    # @param [String] name Gem name
+    # @param [String] version Version spec (like add_runtime_dependency)
+    def add_conditional_dependency(name, version = '>= 0', raise_on_fail = true, &condition)
+      run_code do
+        command = "#{Gem.ruby} -S gem install #{name} -v #{version.inspect}"
+        fail "failed to install #{name}" if (condition.nil? or condition.call) and !system(command) and raise_on_fail
+      end
+    end
+
+    ##
+    # Adds a weak dependency (tries to install it, but does not stop installation if dependency install fails)
+    # @example
+    #   Gem::Specification.new('example', '1.0') { add_weak_dependency 'native_whatever' }
+    #
+    # @param [String] name Gem name
+    # @param [String] version Version spec (like add_runtime_dependency)
+    def add_weak_dependency(name, version = '>= 0')
+      add_conditional_dependency name, version, false
     end
 
     ##
