@@ -156,14 +156,6 @@ module GemTools
     end
 
     ##
-    # @return [TrueClass, FalseClass] Whether or not hook has been setup or is not needed.
-    # @see setup_hook
-    # @api private
-    def setup_hook?
-      @setup_hook or !run_code? or name == 'gem_tools'
-    end
-
-    ##
     # Installs a dependency if the block evaluates to true.
     #
     # @example
@@ -195,6 +187,14 @@ module GemTools
     # @param [String] version Version spec (like add_runtime_dependency)
     def add_weak_dependency(name, version = '>= 0')
       add_conditional_dependency name, version, false
+    end
+
+    ##
+    # @return [TrueClass, FalseClass] Whether or not hook has been setup or is not needed.
+    # @see setup_hook
+    # @api private
+    def setup_hook?
+      @setup_hook or !run_code? or name == 'gem_tools'
     end
 
     ##
