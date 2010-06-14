@@ -90,4 +90,16 @@ describe GemTools do
       gems.list.should_not include('bogus')
     end
   end
+
+  describe :run_command do
+    it 'should trigger command on gem install' do
+      install('run-command').should include('w00t')
+      gems.list.should include('run-command')
+    end
+
+    it 'should abort installation on errors' do
+      install 'bogus-command'
+      gems.list.should_not include('bogus-command')
+    end
+  end
 end

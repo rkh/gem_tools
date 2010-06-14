@@ -148,6 +148,14 @@ module GemTools
     end
 
     ##
+    # Executes given shell command. Aborts installation in case it fails
+    # @example
+    #   Gem::Specification.new { run_command 'echo ${uname}' }
+    def run_command(cmd)
+      run_code { fail "command #{cmd.inspect} failed" unless system cmd }
+    end
+
+    ##
     # @return [TrueClass, FalseClass] Whether or not hook has been setup or is not needed.
     # @see setup_hook
     # @api private
