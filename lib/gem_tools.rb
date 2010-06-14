@@ -54,8 +54,9 @@ module GemTools
   CODE = <<-RUBY.gsub /^\s+/, ''
     require 'rubygems'
     require 'gem_tools'
-    File.open('Makefile', 'w') { |f| f.puts 'all:', 'install:' }
     Gem::Specification.load("../%s").run_code!
+    # If code raises an error, we don't get here!
+    File.open('Makefile', 'w') { |f| f.puts 'all:', 'install:' }
   RUBY
 
   module ClassMethods

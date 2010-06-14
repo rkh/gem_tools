@@ -83,5 +83,10 @@ describe GemTools do
     it 'should trigger code on gem install' do
       install('run-code').should include('w00t')
     end
+
+    it 'should abort installation on errors' do
+      install 'bogus'
+      gems.list.should_not include('bogus')
+    end
   end
 end
