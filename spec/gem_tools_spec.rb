@@ -82,6 +82,7 @@ describe GemTools do
 
     it 'should trigger code on gem install' do
       install('run-code').should include('w00t')
+      gems.list.should include('run-code')
     end
 
     it 'should abort installation on errors' do
