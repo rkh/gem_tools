@@ -5,8 +5,7 @@ Dir.chdir File.expand_path('..', __FILE__)
 
 describe GemTools do
   include FileUtils
-  GEM_DIR = '.gems'
-  CACHED  = "#{GEM_DIR}.cached"
+  GEM_DIR = File.expand_path '.gems'
 
   class Proxy < Object
     def initialize(&block) @block = block end
@@ -18,26 +17,71 @@ describe GemTools do
     `ruby -rubygems -I../lib -S gem #{args.join ' '} 2>&1`
   end
 
-  def set_gem_dir(dir, *args)
-    mkdir_p dir
-    ENV['GEM_HOME'] = dir
-    ENV['GEM_PATH'] = dir
-    unless @fresh
-      gems.build "../gem_tools*.gemspec"
-      gems.install("*.gem", *args)
-      @fresh = true
-    end
+  def install(name)
+    gems.build "*-#{name}.gemspec"
+    gems.install "*-#{name}-*.gem", '--local'
+  end
+
+  def load_spec(name)
+    Gem::Specification.load("gem-tools-example-#{name}.gemspec")
   end
 
   before do
-    set_gem_dir CACHED unless File.exists? CACHED
     rm_rf GEM_DIR
-    cp_r CACHED, GEM_DIR
-    set_gem_dir GEM_DIR, "--local"
-    Dir["*.gem"].each { |g| rm g }
+    mkdir_p GEM_DIR
+    ENV['GEM_HOME'] = GEM_DIR
+    ENV['GEM_PATH'] = GEM_DIR
+    chdir('..') do
+      gems.build "gem_tools*.gemspec"
+      gems.install("*.gem", '--local')
+    end
   end
+
+  after { Dir["*.gem"].each { |g| rm g } }
 
   it 'has installed gem_tools' do
     gems.list.should include('gem_tools')
+  end
+
+  before { @spec = Gem::Specification.new }
+
+  describe :github do
+    it "should set url correctly" do
+      @spec.name = 'bar'
+      @spec.github = 'foo'
+      @spec.homepage.should == 'http://github.com/foo/bar'
+    end
+
+    it "should allow setting the project name directly" do
+      @spec.name = 'notbar'
+      @spec.github 'foo', 'bar'
+      @spec.homepage.should == 'http://github.com/foo/bar'
+    end
+
+    it "should detect fork prefixes" do
+      @spec.name = 'foo-bar'
+      @spec.github 'foo'
+      @spec.homepage.should == 'http://github.com/foo/bar'
+    end
+  end
+
+  describe :run_code do
+    it 'should execute all blocks passed to run_code' do
+      x = 0
+      5.times { @spec.run_code { x += 1 } }
+      x.should == 0
+      @spec.run_code!
+      x.should == 5
+    end
+
+    it 'should set run_code? for gemspecs' do
+      spec = load_spec('run-code')
+      spec.run_code.should_not be_empty
+      spec.should be_running_code
+    end
+
+    it 'should trigger code on gem install' do
+      install('run-code').should include('w00t')
+    end
   end
 end

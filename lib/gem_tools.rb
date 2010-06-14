@@ -42,21 +42,20 @@
 # WITH THE SOFTWARE.
 module GemTools
   require 'rubygems/specification'
-  require 'monkey-lib'
+  require 'fileutils'
 
   VERSION = "0.1.0"
 
-  # Generated file that will ship with your code if you use `run_code`.
-  FILE    = '.gem_tools.rb'
+  # Generated directory for extconf.rb that will ship with your code if you use `run_code`.
+  EXTDIR = '.gem_tools'
 
-  # This code will be paced in GemTools::FILE and hooked into the gemspec
-  # as additional extension (like extconf.rb). Will only be generated if you
-  # use `run_code`.
-  CODE    = <<-RUBY.gsub /^\s+/, ''
+  # This code will be placed in GemTools::EXTDIR and hooked into the gemspec
+  # as additional extension. Will only be generated if you use `run_code`.
+  CODE = <<-RUBY.gsub /^\s+/, ''
     require 'rubygems'
     require 'gem_tools'
     File.open('Makefile', 'w') { |f| f.puts 'all:', 'install:' }
-    Gem::Specification.load("%s").run_code!
+    Gem::Specification.load("../%s").run_code!
   RUBY
 
   module ClassMethods
@@ -68,15 +67,17 @@ module GemTools
     def new(name = nil, version = nil, &block)
       file = caller.first[/^[^:]+/]
       name ||= File.basename file, '.gemspec'
-      super(file, version) do |s|
+      super(name, version) do |s|
         s.extend GemTools::InstanceMethods
-        s.instance_yield block if block
+        block.arity > 0 ? yield(s) : s.instance_eval(&block) if block
         s.setup_hook file
       end
     end
   end
 
   module InstanceMethods
+    include FileUtils
+
     ##
     # Sets up github url.
     #
@@ -103,8 +104,10 @@ module GemTools
     # @param [#to_s] user Github user name.
     # @param [#to_s] project Project name (defaults to gem name or 'xxx'-part of gem name if it matches user-xxx).
     def github(user, project = nil)
-      homepage "http://github.com/#{user}/#{project || name.sub(/^#{user}-/, '')}"
+      self.homepage = "http://github.com/#{user}/#{project || name.sub(/^#{user}-/, '')}"
     end
+
+    alias github= github
 
     ##
     # Allowes to execute some ruby code after installing gem.
@@ -128,8 +131,10 @@ module GemTools
     # @return [TrueClass, FalseClass] Does the gemspec ship with custom run_code blocks?
     # @see run_code
     def run_code?
-      run_code.empty?
+      !run_code.empty?
     end
+
+    alias running_code? run_code?
 
     ##
     # Executes blocks passed to run_code
@@ -145,7 +150,7 @@ module GemTools
     # @see setup_hook
     # @api private
     def setup_hook?
-      @setup_hook or !run_code?
+      @setup_hook or !run_code? or name == 'gem_tools'
     end
 
     ##
@@ -154,9 +159,12 @@ module GemTools
     # @api private
     def setup_hook!(file)
       @setup_hook = true
-      File.open(GemTools::FILE, 'w') { f << (CODE % file) }
-      (files << file << GemTools::FILE).uniq!
-      (extensions << GemTools::FILE).uniq!
+      rm_rf GemTools::EXTDIR
+      mkdir_p GemTools::EXTDIR
+      extfile = File.join(GemTools::EXTDIR, 'extconf.rb')
+      File.open(extfile, 'w') { |f| f << (CODE % file) }
+      (files << file << extfile).uniq!
+      (extensions << extfile).uniq!
       add_dependency("gem_tools", "~> #{GemTools::VERSION}")
     end
 

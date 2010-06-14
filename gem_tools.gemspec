@@ -7,7 +7,6 @@ Gem::Specification.new do |s|
   s.description      = "Extends Gem::Specification"
 
   # Dependencies
-  s.add_dependency "monkey-lib", "~> 0.4"
   s.add_development_dependency "rspec", ">= 1.3.0"
 
   # Those should be about the same in any BigBand extension.
